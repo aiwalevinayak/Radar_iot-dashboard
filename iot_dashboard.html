@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Industrial IoT Dashboard — Vinayak</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #0f1117;
+    color: #e8e8e8;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+  .dash { max-width: 900px; margin: 0 auto; }
+
+  /* TOP BAR */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.5rem; padding-bottom: 1rem;
+    border-bottom: 0.5px solid rgba(255,255,255,0.1);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 36px; height: 36px; background: #1D9E75;
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  }
+  .title { font-size: 16px; font-weight: 500; color: #fff; }
+  .subtitle { font-size: 12px; color: #888; }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; padding: 4px 12px; border-radius: 20px;
+    border: 0.5px solid rgba(255,255,255,0.15); color: #aaa;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #1D9E75; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .clock { font-size: 11px; color: #888; font-family: 'Space Mono', monospace; }
+
+  /* METRICS */
+  .metrics {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px; margin-bottom: 1.5rem;
+  }
+  .metric {
+    background: #1a1d27; border-radius: 10px;
+    padding: 1rem; position: relative; overflow: hidden;
+    border: 0.5px solid rgba(255,255,255,0.07);
+  }
+  .metric-label { font-size: 11px; color: #777; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .metric-value { font-family: 'Space Mono', monospace; font-size: 22px; font-weight: 700; color: #fff; line-height: 1; }
+  .metric-unit { font-size: 11px; color: #666; margin-top: 4px; }
+  .metric-badge { position: absolute; top: 10px; right: 10px; font-size: 10px; padding: 2px 8px; border-radius: 20px; }
+  .badge-green { background: rgba(29,158,117,0.15); color: #1D9E75; }
+  .badge-red { background: rgba(226,75,74,0.15); color: #E24B4A; }
+
+  /* CARDS */
+  .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .card {
+    background: #1a1d27; border: 0.5px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 1rem 1.25rem;
+  }
+  .card-title { font-size: 12px; color: #777; margin-bottom: 1rem; display: flex; align-items: center; gap: 6px; }
+  .full-card { grid-column: 1 / -1; }
+  .chart-wrap { position: relative; width: 100%; height: 180px; }
+
+  /* MOTION */
+  .motion-status { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; padding: 1rem 0; }
+  .motion-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; transition: all 0.3s;
+  }
+  .motion-on { background: rgba(29,158,117,0.15); border: 2px solid #1D9E75; }
+  .motion-off { background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); }
+  .motion-label { font-size: 13px; font-weight: 500; color: #fff; }
+  .motion-sub { font-size: 11px; color: #888; }
+
+  /* SIGNAL BARS */
+  .signal-bars { display: flex; align-items: flex-end; gap: 3px; height: 24px; }
+  .bar { width: 6px; border-radius: 2px; background: rgba(255,255,255,0.1); transition: background 0.3s; }
+  .bar.active { background: #1D9E75; }
+
+  /* LOG */
+  .motion-log { display: flex; flex-direction: column; gap: 6px; max-height: 160px; overflow: hidden; }
+  .log-item {
+    display: flex; align-items: center; gap: 8px; font-size: 12px;
+    padding: 6px 10px; background: rgba(255,255,255,0.04); border-radius: 8px;
+  }
+  .log-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .log-time { color: #666; font-family: 'Space Mono', monospace; font-size: 10px; margin-left: auto; }
+
+  /* BOTTOM */
+  .bottom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .mini-stat { background: #1a1d27; border-radius: 10px; padding: 12px; text-align: center; border: 0.5px solid rgba(255,255,255,0.07); }
+  .mini-stat-val { font-family: 'Space Mono', monospace; font-size: 18px; font-weight: 700; color: #fff; }
+  .mini-stat-label { font-size: 11px; color: #777; margin-top: 2px; }
+
+  /* MQTT INFO */
+  .mqtt-info {
+    font-size: 11px; color: #666; font-family: 'Space Mono', monospace;
+    padding: 10px 12px; background: #1a1d27; border-radius: 8px;
+    border: 0.5px solid rgba(255,255,255,0.07); word-break: break-all;
+  }
+  .mqtt-connected { color: #1D9E75; }
+  .mqtt-error { color: #E24B4A; }
+</style>
+</head>
+<body>
+<div class="dash">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo"><i class="ti ti-radar" style="color:#fff;font-size:18px"></i></div>
+      <div>
+        <div class="title">Industrial IoT Dashboard</div>
+        <div class="subtitle">HB100 Radar · ESP8266 · MQTT · Vinayak Aiwale</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="status-pill"><div class="dot"></div> Live</div>
+      <div class="clock" id="clock">--:--:--</div>
+    </div>
+  </div>
+
+  <!-- METRICS -->
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Radar Value</div>
+      <div class="metric-value" id="m-val">0</div>
+      <div class="metric-unit">ADC (0–1023)</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Motion Status</div>
+      <div class="metric-value" id="m-status" style="font-size:14px;padding-top:4px;color:#1D9E75">NO MOTION</div>
+      <div class="metric-unit" id="m-since">Stable since 0s</div>
+      <div class="metric-badge badge-green" id="m-badge">CLEAR</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Peak Value</div>
+      <div class="metric-value" id="m-peak">0</div>
+      <div class="metric-unit">Session high</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Detections</div>
+      <div class="metric-value" id="m-count">0</div>
+      <div class="metric-unit">This session</div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LIVE CHART -->
+    <div class="card">
+      <div class="card-title"><i class="ti ti-chart-line"></i> Radar signal — live</div>
+      <div class="chart-wrap">
+        <canvas id="liveChart"></canvas>
+      </div>
+    </div>
+
+    <!-- MOTION STATUS -->
+    <div class="card">
+      <div class="card-title"><i class="ti ti-activity"></i> Motion detection</div>
+      <div class="motion-status">
+        <div class="motion-icon motion-off" id="motion-icon">
+          <i class="ti ti-user-off" id="motion-icon-i" style="color:#888"></i>
+        </div>
+        <div class="motion-label" id="motion-label">No Motion</div>
+        <div class="motion-sub" id="motion-sub">Area is clear</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+        <div style="font-size:11px;color:#777">Signal strength</div>
+        <div class="signal-bars" id="signal-bars">
+          <div class="bar" style="height:8px"></div>
+          <div class="bar" style="height:12px"></div>
+          <div class="bar" style="height:16px"></div>
+          <div class="bar" style="height:20px"></div>
+          <div class="bar" style="height:24px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EVENT LOG -->
+    <div class="card full-card">
+      <div class="card-title"><i class="ti ti-list"></i> Event log</div>
+      <div class="motion-log" id="log"></div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM STATS -->
+  <div class="bottom-grid">
+    <div class="mini-stat">
+      <div class="mini-stat-val" id="b-avg">0</div>
+      <div class="mini-stat-label">Avg value</div>
+    </div>
+    <div class="mini-stat">
+      <div class="mini-stat-val" id="b-uptime">0s</div>
+      <div class="mini-stat-label">Uptime</div>
+    </div>
+    <div class="mini-stat">
+      <div class="mini-stat-val" id="b-rate">0/min</div>
+      <div class="mini-stat-label">Detection rate</div>
+    </div>
+  </div>
+
+  <!-- MQTT STATUS -->
+  <div class="mqtt-info" id="mqtt-info">
+    Connecting to HiveMQ broker...
+  </div>
+
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+<script>
+
+// =============================================
+// CHANGE THESE IF NEEDED
+const MQTT_BROKER = 'wss://broker.hivemq.com:8884/mqtt';
+const TOPIC = 'factory/radar/motion';
+const THRESHOLD = 2; // same as your ESP8266 code
+// =============================================
+
+let peak = 0, count = 0, startTime = Date.now();
+let lastMotion = false, motionSince = Date.now();
+let sumVals = [];
+
+// CHART SETUP
+const maxPoints = 40;
+const labels = Array(maxPoints).fill('');
+const data = Array(maxPoints).fill(0);
+const ctx = document.getElementById('liveChart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Radar',
+      data,
+      borderColor: '#1D9E75',
+      backgroundColor: 'rgba(29,158,117,0.08)',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: true,
+      tension: 0.4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 200 },
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { display: false },
+      y: {
+        min: 0, max: 50,
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: { color: '#666', font: { size: 10 }, maxTicksLimit: 5 }
+      }
+    }
+  }
+});
+
+function updateChart(val) {
+  data.push(val); labels.push('');
+  if (data.length > maxPoints) { data.shift(); labels.shift(); }
+  const maxY = Math.max(50, Math.max(...data) * 1.2);
+  chart.options.scales.y.max = Math.round(maxY);
+  chart.update('none');
+}
+
+function addLog(msg, color) {
+  const log = document.getElementById('log');
+  const now = new Date().toLocaleTimeString();
+  const item = document.createElement('div');
+  item.className = 'log-item';
+  item.innerHTML = `<div class="log-dot" style="background:${color}"></div><span style="color:#ccc;font-size:12px">${msg}</span><span class="log-time">${now}</span>`;
+  log.insertBefore(item, log.firstChild);
+  while (log.children.length > 6) log.removeChild(log.lastChild);
+}
+
+function updateSignalBars(val) {
+  const bars = document.querySelectorAll('#signal-bars .bar');
+  const strength = Math.min(5, Math.floor(val / 5));
+  bars.forEach((b, i) => b.classList.toggle('active', i < strength));
+}
+
+function updateUI(val, status) {
+  document.getElementById('m-val').textContent = val;
+  document.getElementById('m-status').textContent = status;
+  document.getElementById('m-peak').textContent = peak;
+  document.getElementById('m-count').textContent = count;
+
+  const isMotion = status === 'MOTION';
+  const icon = document.getElementById('motion-icon');
+  const iconI = document.getElementById('motion-icon-i');
+  const badge = document.getElementById('m-badge');
+
+  if (isMotion) {
+    icon.className = 'motion-icon motion-on';
+    iconI.className = 'ti ti-user'; iconI.style.color = '#1D9E75';
+    document.getElementById('motion-label').textContent = 'Motion Detected!';
+    document.getElementById('motion-sub').textContent = 'Object in range';
+    badge.textContent = 'ALERT'; badge.className = 'metric-badge badge-red';
+    document.getElementById('m-status').style.color = '#E24B4A';
+  } else {
+    icon.className = 'motion-icon motion-off';
+    iconI.className = 'ti ti-user-off'; iconI.style.color = '#888';
+    document.getElementById('motion-label').textContent = 'No Motion';
+    document.getElementById('motion-sub').textContent = 'Area is clear';
+    badge.textContent = 'CLEAR'; badge.className = 'metric-badge badge-green';
+    document.getElementById('m-status').style.color = '#1D9E75';
+  }
+
+  const elapsed = Math.round((Date.now() - motionSince) / 1000);
+  document.getElementById('m-since').textContent = `${isMotion ? 'Detected' : 'Stable'} for ${elapsed}s`;
+
+  updateSignalBars(val);
+  updateChart(val);
+
+  sumVals.push(val);
+  if (sumVals.length > 100) sumVals.shift();
+  const avg = Math.round(sumVals.reduce((a, b) => a + b, 0) / sumVals.length);
+  document.getElementById('b-avg').textContent = avg;
+
+  const uptime = Math.round((Date.now() - startTime) / 1000);
+  document.getElementById('b-uptime').textContent = uptime < 60 ? uptime + 's' : Math.round(uptime / 60) + 'min';
+
+  const mins = Math.max(1, Math.round((Date.now() - startTime) / 60000));
+  document.getElementById('b-rate').textContent = Math.round(count / mins) + '/min';
+}
+
+// CLOCK
+setInterval(() => {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString();
+}, 1000);
+
+// MQTT CONNECTION
+try {
+  const client = mqtt.connect(MQTT_BROKER);
+
+  client.on('connect', () => {
+    client.subscribe(TOPIC);
+    document.getElementById('mqtt-info').innerHTML = '<span class="mqtt-connected">Connected to HiveMQ broker</span> · Topic: ' + TOPIC;
+    addLog('MQTT connected to HiveMQ broker', '#1D9E75');
+  });
+
+  client.on('message', (topic, message) => {
+    try {
+      const payload = JSON.parse(message.toString());
+      const val = payload.value || 0;
+      const status = payload.status || 'NO MOTION';
+      const isMotion = status === 'MOTION';
+
+      if (val > peak) peak = val;
+
+      if (isMotion && !lastMotion) {
+        count++;
+        motionSince = Date.now();
+        addLog('Motion detected — value: ' + val, '#E24B4A');
+      } else if (!isMotion && lastMotion) {
+        motionSince = Date.now();
+        addLog('Area cleared — value: ' + val, '#1D9E75');
+      }
+
+      lastMotion = isMotion;
+      updateUI(val, status);
+      document.getElementById('mqtt-info').innerHTML = '<span class="mqtt-connected">Live</span> · Last: ' + message.toString();
+    } catch(e) {
+      document.getElementById('mqtt-info').innerHTML = '<span class="mqtt-error">JSON parse error</span> · Raw: ' + message.toString();
+    }
+  });
+
+  client.on('error', (err) => {
+    document.getElementById('mqtt-info').innerHTML = '<span class="mqtt-error">MQTT error — check broker URL</span>';
+  });
+
+  client.on('offline', () => {
+    document.getElementById('mqtt-info').innerHTML = '<span class="mqtt-error">MQTT offline — reconnecting...</span>';
+  });
+
+} catch(e) {
+  document.getElementById('mqtt-info').innerHTML = '<span class="mqtt-error">MQTT failed to load</span>';
+}
+
+addLog('Dashboard started — waiting for data', '#888');
+updateUI(0, 'NO MOTION');
+
+</script>
+</body>
+</html>

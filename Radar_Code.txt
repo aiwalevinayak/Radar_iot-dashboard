@@ -1,0 +1,86 @@
+#include <ESP8266WiFi.h>
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
+
+// ===== YOUR DETAILS =====
+#define WIFI_SSID     "   "
+#define WIFI_PASSWORD "     "
+#define MQTT_BROKER   "      "
+#define MQTT_USER     "     "
+#define MQTT_PASS     "     "
+// ========================
+
+#define MQTT_PORT     8883
+#define MQTT_TOPIC    "factory/radar/motion"
+#define RADAR_PIN     A0
+#define THRESHOLD     2
+
+WiFiClientSecure espClient;
+PubSubClient client(espClient);
+
+void connectWiFi() {
+  Serial.print("Connecting to WiFi");
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.println("WiFi Connected!");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void connectMQTT() {
+  espClient.setInsecure();
+  client.setServer(MQTT_BROKER, MQTT_PORT);
+  Serial.print("Connecting to MQTT");
+  while (!client.connected()) {
+    if (client.connect("ESP8266_Radar", MQTT_USER, MQTT_PASS)) {
+      Serial.println();
+      Serial.println("MQTT Connected!");
+    } else {
+      Serial.print(".");
+      delay(3000);
+    }
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("System Starting...");
+  connectWiFi();
+  connectMQTT();
+}
+
+void loop() {
+  if (!client.connected()) connectMQTT();
+  client.loop();
+
+  int radarValue = analogRead(RADAR_PIN);
+
+  StaticJsonDocument<100> doc;
+  doc["value"] = radarValue;
+
+  if (radarValue > THRESHOLD) {
+    doc["status"] = "MOTION";
+    Serial.println(">> MOTION DETECTED!");
+  } else {
+    doc["status"] = "NO MOTION";
+    Serial.println("No motion...");
+  }
+
+  char payload[100];
+  serializeJson(doc, payload);
+
+  client.publish(MQTT_TOPIC, payload);
+  Serial.print("Sent: ");
+  Serial.println(payload);
+  Serial.print("Radar Value: ");
+  Serial.println(radarValue);
+  Serial.println("---");
+
+  delay(500);
+}
